@@ -2,7 +2,7 @@
 // Imports
 // -------------------------------
 import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
-import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm';  // ✅ new D3 import
+import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm';
 
 // -------------------------------
 // Map setup
@@ -19,7 +19,7 @@ const map = new mapboxgl.Map({
 });
 
 // -------------------------------
-// Helper function to convert lon/lat → pixel coordinates
+// Helper function to project coordinates
 // -------------------------------
 function getCoords(station) {
   const point = new mapboxgl.LngLat(+station.Long, +station.Lat);
@@ -31,14 +31,13 @@ function getCoords(station) {
 // Map load event
 // -------------------------------
 map.on('load', async () => {
-  console.log('Map is fully loaded.');
+  console.log('Map fully loaded.');
 
   // Boston bike lanes
   map.addSource('boston_route', {
     type: 'geojson',
     data: 'https://bostonopendata-boston.opendata.arcgis.com/datasets/boston::existing-bike-network-2022.geojson',
   });
-
   map.addLayer({
     id: 'boston-bike-lanes',
     type: 'line',
@@ -55,7 +54,6 @@ map.on('load', async () => {
     type: 'geojson',
     data: 'https://cambridgegisdata-openhubcambridgegis.hub.arcgis.com/datasets/CambridgeGIS::bike-lanes.geojson',
   });
-
   map.addLayer({
     id: 'cambridge-bike-lanes',
     type: 'line',
@@ -71,46 +69,97 @@ map.on('load', async () => {
   // Step 3: Bluebikes stations
   // -------------------------------
   const svg = d3.select('#map').select('svg');
-
-  // Load JSON data
-  const jsonUrl = 'https://dsc106.com/labs/lab07/data/bluebikes-stations.json';
+  const stationUrl = 'https://dsc106.com/labs/lab07/data/bluebikes-stations.json';
   let jsonData;
 
   try {
-    jsonData = await d3.json(jsonUrl);
+    jsonData = await d3.json(stationUrl);
     console.log('Loaded JSON Data:', jsonData);
   } catch (error) {
     console.error('Error loading JSON:', error);
     return;
   }
 
-  // Access the array of stations
-  const stations = jsonData.data.stations;
-  console.log('Stations Array:', stations);
+  let stations = jsonData.data.stations;
 
-  // Append circles for each station
+  // -------------------------------
+  // Step 4.1: Import + parse traffic data
+  // -------------------------------
+  const tripUrl = 'https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv';
+  let trips;
+
+  try {
+    trips = await d3.csv(tripUrl);
+    console.log('Loaded trip data:', trips.length);
+  } catch (error) {
+    console.error('Error loading CSV:', error);
+    return;
+  }
+
+  // -------------------------------
+  // Step 4.2: Calculate arrivals + departures
+  // -------------------------------
+  const departures = d3.rollup(
+    trips,
+    (v) => v.length,
+    (d) => d.start_station_id
+  );
+
+  const arrivals = d3.rollup(
+    trips,
+    (v) => v.length,
+    (d) => d.end_station_id
+  );
+
+  // Add totals to each station
+  stations = stations.map((station) => {
+    const id = station.short_name;
+    station.departures = departures.get(id) ?? 0;
+    station.arrivals = arrivals.get(id) ?? 0;
+    station.totalTraffic = station.departures + station.arrivals;
+    return station;
+  });
+
+  console.log('Stations with traffic data:', stations);
+
+  // -------------------------------
+  // Step 4.3: Size markers according to traffic
+  // -------------------------------
+  const radiusScale = d3
+    .scaleSqrt()
+    .domain([0, d3.max(stations, (d) => d.totalTraffic)])
+    .range([0, 25]);
+
+  // -------------------------------
+  // Step 4.4: Append circles + tooltips
+  // -------------------------------
   const circles = svg
     .selectAll('circle')
     .data(stations)
     .enter()
     .append('circle')
-    .attr('r', 5)
+    .attr('r', (d) => radiusScale(d.totalTraffic))
     .attr('fill', 'steelblue')
     .attr('stroke', 'white')
     .attr('stroke-width', 1)
-    .attr('opacity', 0.8);
+    .attr('fill-opacity', 0.6)
+    .each(function (d) {
+      d3.select(this)
+        .append('title')
+        .text(
+          `${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`
+        );
+    });
 
-  // Function to update circle positions
+  // Position + updates
   function updatePositions() {
     circles
       .attr('cx', (d) => getCoords(d).cx)
       .attr('cy', (d) => getCoords(d).cy);
   }
 
-  // Set initial positions
   updatePositions();
 
-  // Keep markers aligned when map moves/zooms/resizes
   map.on('move', updatePositions);
   map.on('zoom', updatePositions);
   map.on('resize', updatePositions);
