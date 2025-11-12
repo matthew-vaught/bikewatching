@@ -59,20 +59,23 @@ function filterByMinute(tripsByMinute, minute) {
 // Compute per-station traffic
 // -------------------------------
 function computeStationTraffic(stations, timeFilter = -1) {
+  // Aggregate departures
   const departures = d3.rollup(
     filterByMinute(departuresByMinute, timeFilter),
     (v) => v.length,
     (d) => String(d.start_station_id)
   );
 
+  // Aggregate arrivals
   const arrivals = d3.rollup(
     filterByMinute(arrivalsByMinute, timeFilter),
     (v) => v.length,
     (d) => String(d.end_station_id)
   );
 
+  // Attach totals to stations
   return stations.map((station) => {
-    const id = String(station.legacy_id);
+    const id = String(station.short_name); // ✅ match short_name with trip IDs
     station.departures = departures.get(id) ?? 0;
     station.arrivals = arrivals.get(id) ?? 0;
     station.totalTraffic = station.departures + station.arrivals;
@@ -152,6 +155,8 @@ map.on('load', async () => {
 
   // --- Compute initial traffic ---
   stations = computeStationTraffic(stations);
+
+  console.log('Example station traffic:', stations.slice(0, 5));
 
   // --- Radius scale ---
   const radiusScale = d3
