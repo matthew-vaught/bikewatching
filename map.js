@@ -163,6 +163,8 @@ map.on('load', async () => {
     .scaleSqrt()
     .domain([0, d3.max(stations, (d) => d.totalTraffic)])
     .range([0, 25]);
+  
+  const stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
 
   // --- Create circles (with key function) ---
   const circles = svg
@@ -175,6 +177,9 @@ map.on('load', async () => {
     .attr('stroke', 'white')
     .attr('stroke-width', 1)
     .attr('fill-opacity', 0.6)
+    .style('--departure-ratio', (d) =>
+      stationFlow(d.departures / d.totalTraffic)
+    )
     .each(function (d) {
       d3.select(this)
         .append('title')
@@ -216,6 +221,9 @@ map.on('load', async () => {
       .data(filteredStations, (d) => d.short_name)
       .join('circle')
       .attr('r', (d) => radiusScale(d.totalTraffic))
+      .style('--departure-ratio', (d) =>
+        stationFlow(d.departures / d.totalTraffic)
+      )
       .select('title')
       .text(
         (d) =>
