@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // ---------- Step 1: Load data ----------
     let jsonData = await d3.json(
-      "https://dsc106.com/labs/lab07/data/bluebikes-stations-2024-03.json"
+      "https://dsc106.com/labs/lab07/data/bluebikes-stations.json"
     );
 
     let trips = await d3.csv(
