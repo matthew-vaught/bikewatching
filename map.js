@@ -22,7 +22,7 @@ const map = new mapboxgl.Map({
 // Helper function to project coordinates
 // -------------------------------
 function getCoords(station) {
-  const point = new mapboxgl.LngLat(+station.Long, +station.Lat);
+  const point = new mapboxgl.LngLat(+station.lon, +station.lat); // lowercase fields
   const { x, y } = map.project(point);
   return { cx: x, cy: y };
 }
@@ -69,6 +69,12 @@ map.on('load', async () => {
   // Step 3: Bluebikes stations
   // -------------------------------
   const svg = d3.select('#map').select('svg');
+
+  // ensure SVG overlay is above Mapbox canvas
+  const mapCanvas = document.querySelector('.mapboxgl-canvas');
+  const svgElement = document.querySelector('#map svg');
+  mapCanvas.insertAdjacentElement('afterend', svgElement);
+
   const stationUrl = 'https://dsc106.com/labs/lab07/data/bluebikes-stations.json';
   let jsonData;
 
@@ -113,7 +119,7 @@ map.on('load', async () => {
 
   // Add totals to each station
   stations = stations.map((station) => {
-    const id = station.short_name;
+    const id = station.legacy_id; // use correct ID field
     station.departures = departures.get(id) ?? 0;
     station.arrivals = arrivals.get(id) ?? 0;
     station.totalTraffic = station.departures + station.arrivals;
