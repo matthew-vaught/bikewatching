@@ -148,6 +148,9 @@ map.on('load', async () => {
     }
   );
 
+  console.log('Trip sample:', trips[0]);
+  console.log('Station sample:', stations[0]);
+
   console.log('Sample bucket check:', departuresByMinute[600].length);
 
   // --- Compute initial traffic ---
