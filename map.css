@@ -51,3 +51,30 @@ header label {
   color: #777;
   font-style: italic;
 }
+
+/* Step 6: Color flow styling */
+#map svg circle {
+  --color-departures: steelblue;
+  --color-arrivals: darkorange;
+  --color: color-mix(
+    in oklch,
+    var(--color-departures) calc(100% * var(--departure-ratio)),
+    var(--color-arrivals)
+  );
+  fill: var(--color);
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 1em;
+  margin-top: 0.5em;
+  font-size: 0.9em;
+}
+
+.legend div {
+  padding: 0.3em 0.6em;
+  border-radius: 5px;
+  background-color: var(--color);
+  color: white;
+}
