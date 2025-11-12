@@ -1,59 +1,16 @@
-html,
-body {
-  margin: 0;
-  padding: 5px;
-  height: 100%;
-  width: 100%;
-  display: flex;
-  justify-content: center; /* Center horizontally */
-  align-items: center; /* Center vertically */
-}
-
+/* ---------- Map container ---------- */
 #map {
-  width: 100%; /* Adjust width to your desired size */
-  height: 80vh; /* Adjust height to your desired size */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: subtle shadow for effect */
-  border-radius: 8px; /* Optional: rounded corners */
-}
-
-#map svg {
-  position: absolute;
-  z-index: 1;
+  position: relative;
   width: 100%;
-  height: 100%;
-  pointer-events: none;
+  height: 80vh;
+  margin: 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
-#map svg circle {
-  pointer-events: auto; /* enables hover tooltips */
-  fill: steelblue;
-  fill-opacity: 0.6;
-  stroke: white;
-  stroke-width: 1;
-}
-
-header {
-  display: flex;
-  gap: 1em;
-  align-items: baseline;
-}
-
-header label {
-  margin-left: auto;
-}
-
-#selected-time,
-#any-time {
-  display: block;
-}
-
-#any-time {
-  color: #777;
-  font-style: italic;
-}
-
-/* Step 6: Color flow styling */
-#map svg circle {
+/* ---------- Shared color logic for circles + legend ---------- */
+#map svg circle,
+.legend > div {
   --color-departures: steelblue;
   --color-arrivals: darkorange;
   --color: color-mix(
@@ -61,20 +18,70 @@ header label {
     var(--color-departures) calc(100% * var(--departure-ratio)),
     var(--color-arrivals)
   );
-  fill: var(--color);
 }
 
+/* ---------- Circle appearance ---------- */
+#map svg circle {
+  fill: var(--color);
+  stroke: white;
+  fill-opacity: 0.7;
+  stroke-width: 1px;
+  transition: r 0.25s ease, fill 0.25s ease;
+}
+
+/* ---------- Time slider + labels ---------- */
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1em;
+  margin-bottom: 0.5em;
+}
+
+label[for="time-slider"] {
+  margin-left: auto;
+  font-weight: 500;
+}
+
+#selected-time,
+#any-time {
+  display: block;
+  font-size: 0.9em;
+  color: #444;
+}
+
+#any-time {
+  font-style: italic;
+  color: #777;
+}
+
+/* ---------- Legend: Design 2 (swatch + label layout) ---------- */
 .legend {
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 1em;
-  margin-top: 0.5em;
+  gap: 2em;              /* space between legend items */
+  margin-block: 0.75em;  /* spacing above/below */
   font-size: 0.9em;
 }
 
-.legend div {
-  padding: 0.3em 0.6em;
-  border-radius: 5px;
+.legend::before {
+  content: "Legend:";
+  margin-right: 1em;
+  font-weight: 600;
+}
+
+.legend > div {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;            /* swatch–label spacing */
+}
+
+.legend > div::before {
+  content: "";
+  display: inline-block;
+  width: 1.25em;
+  height: 1.25em;
+  border-radius: 3px;
   background-color: var(--color);
-  color: white;
 }
