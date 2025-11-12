@@ -8,13 +8,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const map = new mapboxgl.Map({
     container: "map",
     style: "mapbox://styles/mapbox/light-v11",
-    center: [-71.0915, 42.357], // Boston
+    center: [-71.0915, 42.357],
     zoom: 12,
   });
 
-  // -------------------------------
-  // Wait for map to load fully
-  // -------------------------------
   map.on("load", async () => {
     console.log("Map fully loaded.");
 
@@ -47,18 +44,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       arrivalsByMinute[endMin].push(trip);
     });
 
-    console.log("Sample bucket check:", departuresByMinute[177].length);
-
     // ---------- Step 3: Filtering helpers ----------
     function filterByMinute(tripsByMinute, minute) {
-      if (minute === -1) return tripsByMinute.flat(); // all trips
+      if (minute === -1) return tripsByMinute.flat();
       const minMinute = (minute - 60 + 1440) % 1440;
       const maxMinute = (minute + 60) % 1440;
 
       if (minMinute > maxMinute) {
-        const beforeMidnight = tripsByMinute.slice(minMinute);
-        const afterMidnight = tripsByMinute.slice(0, maxMinute);
-        return beforeMidnight.concat(afterMidnight).flat();
+        return tripsByMinute.slice(minMinute).concat(tripsByMinute.slice(0, maxMinute)).flat();
       } else {
         return tripsByMinute.slice(minMinute, maxMinute).flat();
       }
@@ -79,7 +72,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
 
       return stations.map((station) => {
-        const id = String(station.short_name);
+        const id = String(station.short_name); // ✅ correct matching field
         station.departures = departures.get(id) ?? 0;
         station.arrivals = arrivals.get(id) ?? 0;
         station.totalTraffic = station.departures + station.arrivals;
@@ -87,18 +80,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
-    // ---------- Step 5: Initialize visualization ----------
+    // ---------- Step 5: Visualization setup ----------
     const stations = computeStationTraffic(jsonData.data.stations);
     const svg = d3.select("#map").append("svg");
     const radiusScale = d3.scaleSqrt().domain([0, 2000]).range([0, 25]);
+    const stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
 
-    // Traffic flow color scale (0 → arrivals, 1 → departures)
-    const stationFlow = d3
-      .scaleQuantize()
-      .domain([0, 1])
-      .range([0, 0.5, 1]);
-
-    // Add circles for stations
+    // Draw circles
     const circles = svg
       .selectAll("circle")
       .data(stations, (d) => d.short_name)
@@ -109,7 +97,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       .attr("cy", (d) => map.project([d.lon, d.lat]).y)
       .attr("stroke", "white")
       .attr("fill-opacity", 0.7)
-      // ✅ SAFEGUARD against NaN or zero-traffic
       .style("--departure-ratio", (d) => {
         if (d.totalTraffic === 0) return 0.5;
         const ratio = d.departures / d.totalTraffic;
@@ -121,7 +108,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           `${d.name}\n${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`
       );
 
-    // ---------- Step 6: Time slider setup ----------
+    // ---------- Step 6: Slider setup ----------
     const timeSlider = document.getElementById("time-slider");
     const selectedTime = document.getElementById("selected-time");
     const anyTimeLabel = document.getElementById("any-time");
@@ -142,7 +129,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         .data(filteredStations, (d) => d.short_name)
         .join("circle")
         .attr("r", (d) => radiusScale(d.totalTraffic))
-        // ✅ Apply same color safeguard
         .style("--departure-ratio", (d) => {
           if (d.totalTraffic === 0) return 0.5;
           const ratio = d.departures / d.totalTraffic;
@@ -157,7 +143,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function updateTimeDisplay() {
       timeFilter = Number(timeSlider.value);
-
       if (timeFilter === -1) {
         selectedTime.textContent = "";
         anyTimeLabel.style.display = "block";
@@ -165,24 +150,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         selectedTime.textContent = formatTime(timeFilter);
         anyTimeLabel.style.display = "none";
       }
-
       updateScatterPlot(timeFilter);
     }
 
     timeSlider.addEventListener("input", updateTimeDisplay);
     updateTimeDisplay();
 
-    // ---------- Step 7: Reposition circles when map moves ----------
+    // ---------- Step 7: Reposition circles ----------
     map.on("move", () => {
       circles
-        .attr("cx", (d) => map.project([d.lon, d.lat]).x)
-        .attr("cy", (d) => map.project([d.lon, d.lat]).y);
-    });
-
-    // Force initial positioning after tiles load
-    map.once("idle", () => {
-      svg
-        .selectAll("circle")
         .attr("cx", (d) => map.project([d.lon, d.lat]).x)
         .attr("cy", (d) => map.project([d.lon, d.lat]).y);
     });
