@@ -10,25 +10,30 @@
 
     <!-- Mapbox CSS -->
     <link
-        href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
-        rel="stylesheet"
+      href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
+      rel="stylesheet"
     />
 
-    <!-- ✅ Mapbox JS (you forgot this!) -->
+    <!-- Mapbox JS -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 
-    <!-- D3 -->
+    <!-- D3 JS -->
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
-
-    <!-- Your custom script -->
-    <script src="map.js" type="module"></script>
   </head>
+
   <body>
     <header>
       <h1>🚴🏼‍♀️ Bikewatching</h1>
       <label>
         Filter by time:
-        <input id="time-slider" type="range" min="-1" max="1440" step="10" value="-1" />
+        <input
+          id="time-slider"
+          type="range"
+          min="-1"
+          max="1440"
+          step="10"
+          value="-1"
+        />
         <time id="selected-time"></time>
         <em id="any-time">(any time)</em>
       </label>
@@ -41,5 +46,8 @@
       <div style="--departure-ratio: 0.5">Balanced</div>
       <div style="--departure-ratio: 0">More arrivals</div>
     </div>
+
+    <!-- Custom JS -->
+    <script src="map.js" type="module"></script>
   </body>
 </html>

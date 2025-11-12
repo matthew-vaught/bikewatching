@@ -8,6 +8,22 @@
   overflow: hidden;
 }
 
+/* ---------- Ensure correct layering ---------- */
+.mapboxgl-canvas {
+  position: relative !important;
+  z-index: 0;
+}
+
+#map svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+}
+
 /* ---------- Shared color logic for circles + legend ---------- */
 #map svg circle,
 .legend > div {
@@ -29,7 +45,7 @@
   transition: r 0.25s ease, fill 0.25s ease;
 }
 
-/* ---------- Time slider + labels ---------- */
+/* ---------- Header & Slider ---------- */
 header {
   display: flex;
   align-items: baseline;
@@ -55,13 +71,13 @@ label[for="time-slider"] {
   color: #777;
 }
 
-/* ---------- Legend: Design 2 (swatch + label layout) ---------- */
+/* ---------- Legend (Design 2) ---------- */
 .legend {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2em;              /* space between legend items */
-  margin-block: 0.75em;  /* spacing above/below */
+  gap: 2em;
+  margin-block: 0.75em;
   font-size: 0.9em;
 }
 
@@ -74,7 +90,7 @@ label[for="time-slider"] {
 .legend > div {
   display: flex;
   align-items: center;
-  gap: 0.5em;            /* swatch–label spacing */
+  gap: 0.5em;
 }
 
 .legend > div::before {

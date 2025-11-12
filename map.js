@@ -8,17 +8,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   const map = new mapboxgl.Map({
     container: "map",
     style: "mapbox://styles/mapbox/light-v11",
-    center: [-71.0915, 42.357], // Boston
+    center: [-71.0915, 42.357],
     zoom: 12,
   });
 
-  // Wait for map to load before adding data
+  // -------------------------------
+  // Wait for map to load fully
+  // -------------------------------
   map.on("load", async () => {
     console.log("Map fully loaded.");
 
-    // -------------------------------
-    // Step 1: Load data
-    // -------------------------------
+    // ---------- Step 1: Load data ----------
     let jsonData = await d3.json(
       "https://dsc106.com/labs/lab07/data/bluebikes-stations-2024-03.json"
     );
@@ -32,9 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     );
 
-    // -------------------------------
-    // Step 2: Precompute minute buckets
-    // -------------------------------
+    // ---------- Step 2: Precompute minute buckets ----------
     let departuresByMinute = Array.from({ length: 1440 }, () => []);
     let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
 
@@ -51,9 +49,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     console.log("Sample bucket check:", departuresByMinute[177].length);
 
-    // -------------------------------
-    // Step 3: Filtering helpers
-    // -------------------------------
+    // ---------- Step 3: Filtering helpers ----------
     function filterByMinute(tripsByMinute, minute) {
       if (minute === -1) return tripsByMinute.flat(); // all trips
       let minMinute = (minute - 60 + 1440) % 1440;
@@ -68,9 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    // -------------------------------
-    // Step 4: Compute station traffic
-    // -------------------------------
+    // ---------- Step 4: Compute station traffic ----------
     function computeStationTraffic(stations, timeFilter = -1) {
       const departures = d3.rollup(
         filterByMinute(departuresByMinute, timeFilter),
@@ -93,9 +87,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
-    // -------------------------------
-    // Step 5: Initialize visualization
-    // -------------------------------
+    // ---------- Step 5: Initialize visualization ----------
     const stations = computeStationTraffic(jsonData.data.stations);
     const svg = d3.select("#map").append("svg");
     const radiusScale = d3.scaleSqrt().domain([0, 2000]).range([0, 25]);
@@ -104,7 +96,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const stationFlow = d3
       .scaleQuantize()
       .domain([0, 1])
-      .range([0, 0.5, 1]); // 3 discrete color steps
+      .range([0, 0.5, 1]);
 
     // Add circles for stations
     const circles = svg
@@ -126,9 +118,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           `${d.name}\n${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`
       );
 
-    // -------------------------------
-    // Step 6: Time slider setup
-    // -------------------------------
+    // ---------- Step 6: Time slider ----------
     const timeSlider = document.getElementById("time-slider");
     const selectedTime = document.getElementById("selected-time");
     const anyTimeLabel = document.getElementById("any-time");
@@ -176,11 +166,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     timeSlider.addEventListener("input", updateTimeDisplay);
     updateTimeDisplay();
 
-    // -------------------------------
-    // Step 7: Reposition circles when map moves
-    // -------------------------------
+    // ---------- Step 7: Reposition circles when map moves ----------
     map.on("move", () => {
       circles
+        .attr("cx", (d) => map.project([d.lon, d.lat]).x)
+        .attr("cy", (d) => map.project([d.lon, d.lat]).y);
+    });
+
+    // Force initial positioning after tiles load
+    map.once("idle", () => {
+      svg
+        .selectAll("circle")
         .attr("cx", (d) => map.project([d.lon, d.lat]).x)
         .attr("cy", (d) => map.project([d.lon, d.lat]).y);
     });
