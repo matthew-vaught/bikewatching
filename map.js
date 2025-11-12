@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const map = new mapboxgl.Map({
     container: "map",
     style: "mapbox://styles/mapbox/light-v11",
-    center: [-71.0915, 42.357],
+    center: [-71.0915, 42.357], // Boston
     zoom: 12,
   });
 
@@ -19,11 +19,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("Map fully loaded.");
 
     // ---------- Step 1: Load data ----------
-    let jsonData = await d3.json(
+    const jsonData = await d3.json(
       "https://dsc106.com/labs/lab07/data/bluebikes-stations.json"
     );
 
-    let trips = await d3.csv(
+    const trips = await d3.csv(
       "https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv",
       (trip) => {
         trip.started_at = new Date(trip.started_at);
@@ -33,16 +33,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
 
     // ---------- Step 2: Precompute minute buckets ----------
-    let departuresByMinute = Array.from({ length: 1440 }, () => []);
-    let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
+    const departuresByMinute = Array.from({ length: 1440 }, () => []);
+    const arrivalsByMinute = Array.from({ length: 1440 }, () => []);
 
     function minutesSinceMidnight(date) {
       return date.getHours() * 60 + date.getMinutes();
     }
 
     trips.forEach((trip) => {
-      let startMin = minutesSinceMidnight(trip.started_at);
-      let endMin = minutesSinceMidnight(trip.ended_at);
+      const startMin = minutesSinceMidnight(trip.started_at);
+      const endMin = minutesSinceMidnight(trip.ended_at);
       departuresByMinute[startMin].push(trip);
       arrivalsByMinute[endMin].push(trip);
     });
@@ -52,12 +52,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     // ---------- Step 3: Filtering helpers ----------
     function filterByMinute(tripsByMinute, minute) {
       if (minute === -1) return tripsByMinute.flat(); // all trips
-      let minMinute = (minute - 60 + 1440) % 1440;
-      let maxMinute = (minute + 60) % 1440;
+      const minMinute = (minute - 60 + 1440) % 1440;
+      const maxMinute = (minute + 60) % 1440;
 
       if (minMinute > maxMinute) {
-        let beforeMidnight = tripsByMinute.slice(minMinute);
-        let afterMidnight = tripsByMinute.slice(0, maxMinute);
+        const beforeMidnight = tripsByMinute.slice(minMinute);
+        const afterMidnight = tripsByMinute.slice(0, maxMinute);
         return beforeMidnight.concat(afterMidnight).flat();
       } else {
         return tripsByMinute.slice(minMinute, maxMinute).flat();
@@ -92,7 +92,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const svg = d3.select("#map").append("svg");
     const radiusScale = d3.scaleSqrt().domain([0, 2000]).range([0, 25]);
 
-    // Traffic flow color scale
+    // Traffic flow color scale (0 → arrivals, 1 → departures)
     const stationFlow = d3
       .scaleQuantize()
       .domain([0, 1])
@@ -109,16 +109,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       .attr("cy", (d) => map.project([d.lon, d.lat]).y)
       .attr("stroke", "white")
       .attr("fill-opacity", 0.7)
-      .style("--departure-ratio", (d) =>
-        stationFlow(d.departures / d.totalTraffic)
-      )
+      // ✅ SAFEGUARD against NaN or zero-traffic
+      .style("--departure-ratio", (d) => {
+        if (d.totalTraffic === 0) return 0.5;
+        const ratio = d.departures / d.totalTraffic;
+        return stationFlow(Math.max(0, Math.min(1, ratio)));
+      })
       .append("title")
       .text(
         (d) =>
           `${d.name}\n${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`
       );
 
-    // ---------- Step 6: Time slider ----------
+    // ---------- Step 6: Time slider setup ----------
     const timeSlider = document.getElementById("time-slider");
     const selectedTime = document.getElementById("selected-time");
     const anyTimeLabel = document.getElementById("any-time");
@@ -139,9 +142,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         .data(filteredStations, (d) => d.short_name)
         .join("circle")
         .attr("r", (d) => radiusScale(d.totalTraffic))
-        .style("--departure-ratio", (d) =>
-          stationFlow(d.departures / d.totalTraffic)
-        )
+        // ✅ Apply same color safeguard
+        .style("--departure-ratio", (d) => {
+          if (d.totalTraffic === 0) return 0.5;
+          const ratio = d.departures / d.totalTraffic;
+          return stationFlow(Math.max(0, Math.min(1, ratio)));
+        })
         .select("title")
         .text(
           (d) =>
