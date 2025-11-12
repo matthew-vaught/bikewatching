@@ -7,41 +7,26 @@
     <link rel="stylesheet" href="map.css" />
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
     <title>Bikewatching</title>
-
     <!-- Mapbox GL JS CSS -->
     <link
-      href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
-      rel="stylesheet"
+    href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
+    rel="stylesheet"
     />
-    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.js"></script>
     <script src="map.js" type="module"></script>
   </head>
-
   <body>
     <header>
       <h1>🚴🏼‍♀️ Bikewatching</h1>
       <label>
         Filter by time:
-        <input
-          id="time-slider"
-          type="range"
-          min="-1"
-          max="1440"
-          step="10"
-          value="-1"
-        />
+        <input id="time-slider" type="range" min="-1" max="1440" step="10" value="-1" />
         <time id="selected-time"></time>
         <em id="any-time">(any time)</em>
       </label>
     </header>
 
-    <div id="map"></div>
-
-    <div class="legend">
-      <div style="--departure-ratio: 1">More departures</div>
-      <div style="--departure-ratio: 0.5">Balanced</div>
-      <div style="--departure-ratio: 0">More arrivals</div>
+    <div id="map">
+    <svg></svg>
     </div>
   </body>
 </html>
